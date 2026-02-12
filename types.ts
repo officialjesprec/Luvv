@@ -1,15 +1,16 @@
 
-export type Relationship = 
-  | 'Male Friend' 
-  | 'Female Friend' 
-  | 'Spouse' 
-  | 'Girlfriend' 
-  | 'Boyfriend' 
-  | 'Father' 
-  | 'Mother' 
-  | 'Sister' 
-  | 'Brother' 
-  | 'Pastor' 
+export type Relationship =
+  | 'Male Friend'
+  | 'Female Friend'
+  | 'Spouse'
+  | 'Girlfriend'
+  | 'Boyfriend'
+  | 'Father'
+  | 'Mother'
+  | 'Sister'
+  | 'Brother'
+  | 'Cousin'
+  | 'Pastor'
   | 'Employer';
 
 export type Tone = 'Romantic' | 'Professional' | 'Friendly' | 'Polite' | 'Funny';

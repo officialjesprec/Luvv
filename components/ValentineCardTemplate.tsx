@@ -20,13 +20,13 @@ const ValentineCardTemplate = forwardRef<HTMLDivElement, ValentineCardTemplatePr
     // Use explicit Variants type and const assertion for ease to resolve string vs Easing type mismatch
     const itemVariants: Variants = {
       initial: { opacity: 0, y: 20 },
-      animate: { 
-        opacity: 1, 
-        y: 0, 
-        transition: { 
-          duration: 0.8, 
-          ease: "easeOut" as const 
-        } 
+      animate: {
+        opacity: 1,
+        y: 0,
+        transition: {
+          duration: 0.8,
+          ease: "easeOut" as const
+        }
       }
     };
 
@@ -35,16 +35,16 @@ const ValentineCardTemplate = forwardRef<HTMLDivElement, ValentineCardTemplatePr
       animate: {
         scale: [1, 1.05, 1],
         opacity: [0.05, 0.1, 0.05],
-        transition: { 
-          duration: 3, 
-          repeat: Infinity, 
-          ease: "easeInOut" as const 
+        transition: {
+          duration: 3,
+          repeat: Infinity,
+          ease: "easeInOut" as const
         }
       }
     };
 
     return (
-      <div 
+      <div
         ref={ref}
         className={`${isPreview ? 'rounded-2xl shadow-xl' : ''} w-[1080px] h-[1920px] p-24 flex flex-col justify-center items-center text-center relative overflow-hidden`}
         style={{
@@ -52,27 +52,27 @@ const ValentineCardTemplate = forwardRef<HTMLDivElement, ValentineCardTemplatePr
         }}
       >
         {/* Ornate Background Elements */}
-        <motion.div 
+        <motion.div
           // Use undefined instead of {} for conditional animation prop to match expected types
           animate={isPreview ? pulseVariants.animate : undefined}
           className="absolute top-[-100px] left-[-100px] text-[#FFC0CB] opacity-[0.05] text-[600px] pointer-events-none rotate-12 select-none font-serif"
         >
           ♥
         </motion.div>
-        <motion.div 
+        <motion.div
           // Use undefined instead of {} for conditional animation prop to match expected types
           animate={isPreview ? pulseVariants.animate : undefined}
           className="absolute bottom-[-100px] right-[-100px] text-[#FFC0CB] opacity-[0.05] text-[600px] pointer-events-none -rotate-12 select-none font-serif"
         >
           ♥
         </motion.div>
-        
+
         {/* Double Border Frame */}
         <div className="absolute inset-12 border-[12px] border-[#FFC0CB] opacity-10 rounded-[120px]"></div>
         <div className="absolute inset-20 border-[2px] border-[#FFC0CB] opacity-30 rounded-[100px]"></div>
 
         {/* Content Container */}
-        <motion.div 
+        <motion.div
           variants={containerVariants}
           initial="initial"
           animate="animate"
@@ -88,11 +88,11 @@ const ValentineCardTemplate = forwardRef<HTMLDivElement, ValentineCardTemplatePr
           <motion.h2 variants={itemVariants} className="text-[#FFC0CB] font-serif italic text-8xl mb-8 tracking-tight">
             Happy Valentine's Day
           </motion.h2>
-          
+
           <motion.div variants={itemVariants} className="text-[#FFC0CB] font-bold tracking-[0.6em] uppercase text-xl mb-24 opacity-60">
             to {recipient}
           </motion.div>
-          
+
           <motion.div variants={itemVariants} className="relative mb-24">
             <div className="absolute -top-16 -left-12 text-[#FFC0CB] text-9xl opacity-10 font-serif">“</div>
             <p className="text-[#FFFDD0] font-serif text-[64px] leading-[1.3] italic px-12 drop-shadow-lg">
@@ -100,7 +100,7 @@ const ValentineCardTemplate = forwardRef<HTMLDivElement, ValentineCardTemplatePr
             </p>
             <div className="absolute -bottom-24 -right-12 text-[#FFC0CB] text-9xl opacity-10 font-serif">”</div>
           </motion.div>
-          
+
           <motion.div variants={itemVariants} className="mt-12 flex flex-col items-center">
             <div className="text-[#FFC0CB] font-bold tracking-[0.4em] uppercase text-2xl mb-6 opacity-80">Forever yours,</div>
             <p className="text-[#FFFDD0] font-serif text-8xl tracking-wide">{sender}</p>
@@ -116,8 +116,8 @@ const ValentineCardTemplate = forwardRef<HTMLDivElement, ValentineCardTemplatePr
 
         {/* Subtle Branding */}
         <div className="absolute bottom-16 w-full text-center">
-          <span className="text-lg text-[#FFC0CB] opacity-30 uppercase tracking-[0.5em] font-bold">
-            Created via Valentine Magic
+          <span className="text-lg text-[#FFC0CB] opacity-40 uppercase tracking-[0.6em] font-serif italic">
+            Crafted with Love at Luvv.com
           </span>
         </div>
       </div>

@@ -1,14 +1,14 @@
 
-import React from 'react';
-import { 
-  Heart, 
-  User, 
-  Users, 
-  Briefcase, 
-  Church, 
-  Smile, 
-  HeartPulse, 
-  HeartHandshake 
+import * as React from 'react';
+import {
+  Heart,
+  User,
+  Users,
+  Briefcase,
+  Church,
+  Smile,
+  HeartPulse,
+  HeartHandshake
 } from 'lucide-react';
 import { Relationship, Tone } from './types';
 
@@ -28,6 +28,7 @@ export const RELATIONSHIP_OPTIONS: { label: Relationship; icon: React.ReactNode 
   { label: 'Mother', icon: <Users className="w-6 h-6" /> },
   { label: 'Sister', icon: <Smile className="w-6 h-6" /> },
   { label: 'Brother', icon: <Smile className="w-6 h-6" /> },
+  { label: 'Cousin', icon: <Users className="w-6 h-6" /> },
   { label: 'Pastor', icon: <Church className="w-6 h-6" /> },
   { label: 'Employer', icon: <Briefcase className="w-6 h-6" /> },
 ];
