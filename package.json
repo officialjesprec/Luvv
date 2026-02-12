@@ -24,6 +24,7 @@
     "react-router-dom": "^7.13.0"
   },
   "devDependencies": {
+    "@cloudflare/workerd-windows-64": "^1.20260212.0",
     "@cloudflare/workers-types": "^4.20260212.0",
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.14",
