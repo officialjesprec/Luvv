@@ -11,6 +11,40 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper to normalize messages that might be returned as JSON strings within the array
+function normalizeMessages(msgs: any[]): string[] {
+    return msgs.map(m => {
+        if (typeof m !== 'string') return String(m);
+        const trimmed = m.trim();
+        if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+            try {
+                const parsed = JSON.parse(trimmed);
+                return parsed.message || parsed.text || parsed.content || trimmed;
+            } catch {
+                return trimmed;
+            }
+        }
+        return trimmed;
+    });
+}
+
+// Convert actual names to placeholders for safe database storage
+function sanitizeToTemplate(msgs: string[], recipient: string, sender: string): string[] {
+    return msgs.map(m => {
+        // Create regex that is case insensitive and handles potential punctuation around names
+        const rRegex = new RegExp(`\\b${recipient.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+        const sRegex = new RegExp(`\\b${sender.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+        return m.replace(rRegex, '[RECIPIENT]').replace(sRegex, '[SENDER]');
+    });
+}
+
+// Convert placeholders back to actual names for the user
+function personalizeMessages(msgs: string[], recipient: string, sender: string): string[] {
+    return msgs.map(m => {
+        return m.replace(/\[RECIPIENT\]/g, recipient).replace(/\[SENDER\]/g, sender);
+    });
+}
+
 Deno.serve(async (req) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders });
@@ -44,14 +78,20 @@ Deno.serve(async (req) => {
 
         if (!cacheError && cachedMessages && cachedMessages.length >= 3) {
             console.log('Cache Hit');
+            const templates = cachedMessages.map(m => m.message_text);
+            const personalized = personalizeMessages(templates, recipient, sender);
             return new Response(
-                JSON.stringify({ messages: cachedMessages.map(m => m.message_text), provider: 'cache' }),
+                JSON.stringify({ messages: personalized, provider: 'cache' }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
         // 2. AI FAILOVER SYSTEM
-        const prompt = `Write a ${tone} Valentine's message to my ${relationship} named ${recipient}. The message should be signed from ${sender}. Keep it under 100 words. Return exactly THREE distinct options in JSON format with a key "messages" containing an array of strings.`;
+        const prompt = `Write a ${tone} Valentine's message to my ${relationship}. 
+        Use the placeholder [RECIPIENT] for the recipient's name and [SENDER] for the sender's name.
+        The message should be signed from [SENDER]. Keep it under 100 words. 
+        Return exactly THREE distinct options in JSON format with a key "messages" containing an array of strings.
+        Crucial: Use the literal strings "[RECIPIENT]" and "[SENDER]" in the text.`;
 
         let messages: string[] = [];
         let provider = '';
@@ -79,8 +119,8 @@ Deno.serve(async (req) => {
                     const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
                     if (rawText) {
                         const parsed = JSON.parse(rawText);
-                        if (parsed.messages) {
-                            messages = parsed.messages;
+                        if (parsed.messages && Array.isArray(parsed.messages)) {
+                            messages = normalizeMessages(parsed.messages);
                             provider = 'gemini-1.5-flash';
                         }
                     }
@@ -117,8 +157,8 @@ Deno.serve(async (req) => {
                     const content = groqData.choices?.[0]?.message?.content;
                     if (content) {
                         const parsedValue = JSON.parse(content);
-                        if (parsedValue.messages) {
-                            messages = parsedValue.messages;
+                        if (parsedValue.messages && Array.isArray(parsedValue.messages)) {
+                            messages = normalizeMessages(parsedValue.messages);
                             provider = 'groq-llama-3.1';
                         }
                     }
@@ -160,7 +200,10 @@ Deno.serve(async (req) => {
         // 3. Save to DB (Immediate)
         // We only save if it's new AI content (not from cache or fallback)
         if (provider.includes('gemini') || provider.includes('groq')) {
-            const dbEntries = messages.map((txt: string) => ({
+            // First normalize (unbox JSON) then sanitize (replace names with placeholders if AI used them)
+            const templateMessages = sanitizeToTemplate(messages, recipient, sender);
+
+            const dbEntries = templateMessages.map((txt: string) => ({
                 relationship,
                 tone,
                 message_text: txt,
@@ -174,6 +217,12 @@ Deno.serve(async (req) => {
             } else {
                 console.log('Successfully saved to DB');
             }
+
+            // Always personalize before returning to frontend
+            messages = personalizeMessages(templateMessages, recipient, sender);
+        } else if (provider === 'db-fallback-random') {
+            // Personalize the fallback messages too
+            messages = personalizeMessages(messages, recipient, sender);
         }
 
         return new Response(
