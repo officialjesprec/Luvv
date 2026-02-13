@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
             try {
                 console.log('Trying Gemini...');
                 const geminiResp = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+                    `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${Deno.env.get("GEMINI_API_KEY")}`,
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
                         const parsed = JSON.parse(rawText);
                         if (parsed.messages && Array.isArray(parsed.messages)) {
                             messages = normalizeMessages(parsed.messages);
-                            provider = 'gemini-1.5-flash';
+                            provider = 'gemini-2.5-flash';
                         }
                     }
                 } else {
