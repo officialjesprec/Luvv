@@ -64,6 +64,17 @@ const App: React.FC = () => {
     }
   }, [state.step]);
 
+  // Track site visits in real-time DB
+  useEffect(() => {
+    const logVisit = async () => {
+      const { supabase } = await import('./services/supabase');
+      if (supabase) {
+        await supabase.from('site_visits').insert({});
+      }
+    };
+    logVisit();
+  }, []);
+
   const isWhatsappValid = useMemo(() => {
     return /^\+?[0-9]{5,15}$/.test(whatsappNumber.replace(/\s/g, ''));
   }, [whatsappNumber]);

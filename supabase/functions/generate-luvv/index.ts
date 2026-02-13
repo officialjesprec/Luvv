@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient } from 'supabase';
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY');
