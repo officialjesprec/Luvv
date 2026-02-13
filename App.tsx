@@ -334,7 +334,7 @@ const App: React.FC = () => {
 
                 {/* Re-implementing as a vertical list for better static UX or a simple carousel with next/prev buttons if needed. 
                     Given the "swipe" instruction, a list is safer for static. */}
-                <div className="flex flex-col gap-4 w-full h-full overflow-y-auto">
+                <div className="flex flex-col gap-4 w-full h-full overflow-y-auto no-scrollbar">
                   {state.generatedMessages.map((msg, idx) => {
                     const isSelected = state.selectedMessageIndex === idx;
                     return (
