@@ -1,11 +1,5 @@
 
-/// <reference types="@cloudflare/workers-types" />
-
-interface Env {
-    DB: D1Database;
-    GEMINI_API_KEY: string;
-    GROQ_API_KEY: string;
-}
+import { createClient } from '@supabase/supabase-js';
 
 interface RequestBody {
     relationship: string;
@@ -14,39 +8,33 @@ interface RequestBody {
     sender: string;
 }
 
-export const onRequestPost: PagesFunction<Env> = async (context) => {
-    const { request, env } = context;
-
-    // 1. Parse Request
-    let body: RequestBody;
-    try {
-        body = await request.json();
-    } catch (e) {
-        return new Response('Invalid JSON', { status: 400 });
-    }
+export const generateLuvv = async (body: RequestBody) => {
+    // 1. Initialize Supabase (Using env variables)
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
+    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { relationship, tone, recipient, sender } = body;
     if (!relationship || !tone) {
-        return new Response('Missing relationship or tone', { status: 400 });
+        throw new Error('Missing relationship or tone');
     }
 
-    // 2. CHECK CACHE (D1)
+    // 2. CHECK CACHE (Supabase)
     try {
-        const cached = await env.DB.prepare(
-            'SELECT message_text FROM Message_Library WHERE relationship = ? AND tone = ? ORDER BY RANDOM() LIMIT 1'
-        )
-            .bind(relationship, tone)
-            .first<{ message_text: string }>();
+        const { data: cached, error: cacheError } = await supabase
+            .from('message_library')
+            .select('message_text')
+            .eq('relationship', relationship)
+            .eq('tone', tone)
+            .limit(1)
+            .single();
 
         if (cached) {
-            return new Response(
-                JSON.stringify({ messages: [cached.message_text], provider: 'cache - d1' }),
-                { headers: { 'Content-Type': 'application/json' } }
-            );
+            return { messages: [cached.message_text], provider: 'cache - supabase' };
         }
     } catch (err) {
-        console.error('D1 Read Error:', err);
-        // Continue to AI if D1 fails
+        console.error('Supabase Read Error:', err);
+        // Continue to AI if cache lookup fails
     }
 
     // 3. AI FAILOVER SYSTEM
@@ -58,11 +46,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     let provider = '';
 
     // Attempt 1: Gemini
-    if (!message && env.GEMINI_API_KEY) {
+    if (!message && process.env.VITE_GEMINI_API_KEY) {
         try {
             console.log('Trying Gemini...');
             const geminiResp = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.VITE_GEMINI_API_KEY}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -85,13 +73,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     // Attempt 2: Groq (Llama 3.1)
-    if (!message && env.GROQ_API_KEY) {
+    if (!message && process.env.VITE_GROQ_API_KEY) {
         try {
             console.log('Gemini failed. Trying Groq...');
             const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${env.GROQ_API_KEY}`,
+                    'Authorization': `Bearer ${process.env.VITE_GROQ_API_KEY}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
@@ -114,28 +102,26 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     if (!message) {
-        return new Response(
-            JSON.stringify({ error: "Cupid's ink ran dry. All models failed." }),
-            { status: 503, headers: { 'Content-Type': 'application/json' } }
-        );
+        throw new Error("Cupid's ink ran dry. All models failed.");
     }
 
-    // 4. SAVE TO D1 (Async)
-    // We don't await this to speed up the response
+    // 4. SAVE TO Supabase (Async)
     if (provider !== 'cache') {
-        context.waitUntil(
-            env.DB.prepare(
-                'INSERT INTO Message_Library (relationship, tone, message_text, provider) VALUES (?, ?, ?, ?)'
-            )
-                .bind(relationship, tone, message, provider)
-                .run()
-                .then(() => console.log('Saved to D1'))
-                .catch((err) => console.error('D1 Save Error:', err))
-        );
+        try {
+            await supabase
+                .from('message_library')
+                .insert({
+                    relationship,
+                    tone,
+                    message_text: message,
+                    provider
+                });
+            console.log('Saved to Supabase');
+        } catch (err) {
+            console.error('Supabase Save Error:', err);
+        }
     }
 
-    return new Response(
-        JSON.stringify({ messages: [message], provider: provider }),
-        { headers: { 'Content-Type': 'application/json' } }
-    );
+    return { messages: [message], provider: provider };
 };
+
