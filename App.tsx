@@ -15,7 +15,7 @@ import ReactGA from "react-ga4";
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>({
-    step: 1,
+    step: 0, // Start with Splash Screen
     relationship: null,
     recipientName: '',
     senderName: '',
@@ -26,9 +26,27 @@ const App: React.FC = () => {
     error: null,
   });
 
+  const [splashProgress, setSplashProgress] = useState(0);
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Splash Screen Logic
+  useEffect(() => {
+    if (state.step === 0) {
+      const interval = setInterval(() => {
+        setSplashProgress((prev) => {
+          if (prev >= 100) {
+            clearInterval(interval);
+            setTimeout(() => setState(s => ({ ...s, step: 1 })), 500);
+            return 100;
+          }
+          return Math.min(prev + Math.random() * 10, 100);
+        });
+      }, 150);
+      return () => clearInterval(interval);
+    }
+  }, [state.step]);
 
   // Initialize Google Analytics
   useEffect(() => {
@@ -183,6 +201,38 @@ const App: React.FC = () => {
         </div>
 
         <div className="p-8 md:p-10 flex-1 flex flex-col overflow-y-auto no-scrollbar">
+          {state.step === 0 && (
+            <div className="flex-1 flex flex-col items-center justify-center space-y-12">
+              <div className="relative">
+                <div className="animate-bounce h-32 w-32 filter drop-shadow-[0_0_30px_rgba(255,77,109,0.4)]">
+                  <Heart size={128} fill="#FF4D6D" stroke="#FF4D6D" className="text-[#FF4D6D]" />
+                </div>
+                {/* Secondary heart pulse */}
+                <div className="absolute inset-0 animate-ping opacity-20">
+                  <Heart size={128} fill="#FF4D6D" stroke="#FF4D6D" className="text-[#FF4D6D]" />
+                </div>
+              </div>
+
+              <div className="text-center space-y-6 w-full max-w-[280px]">
+                <h1 className="text-5xl font-serif font-bold text-white italic tracking-wider animate-pulse">
+                  Spread Luvv
+                </h1>
+
+                <div className="space-y-3">
+                  <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden border border-white/5">
+                    <div
+                      className="h-full bg-gradient-to-r from-pink-400 to-[#FF4D6D] transition-all duration-300 ease-out"
+                      style={{ width: `${splashProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] font-bold text-pink-300 uppercase tracking-[0.5em] opacity-40">
+                    Preparing valid hearts...
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {state.step === 1 && (
             <div className="flex-1 flex flex-col">
               <div className="text-center mb-8">
