@@ -190,7 +190,7 @@ const App: React.FC = () => {
       <Analytics />
 
       {/* Branding Header */}
-      <div className="absolute top-6 left-0 right-0 z-20 flex justify-center items-center pointer-events-none">
+      <div className="w-full flex justify-center items-center pt-8 pb-6 z-20 relative">
         <div className="flex items-center gap-2 bg-white/20 backdrop-blur-xl px-6 py-3 rounded-full border border-white/40 shadow-xl">
           <span className="text-crimson-800/80 font-serif italic text-lg">Made with</span>
           <img src="/logo.png" alt="Luvv Logo" className="h-10 w-auto" />
@@ -198,7 +198,7 @@ const App: React.FC = () => {
       </div>
 
       {/* Main Container */}
-      <div className={`w-full ${state.step >= 5 ? 'max-w-2xl' : 'max-w-[340px] md:max-w-2xl lg:max-w-4xl'} h-[70vh] md:h-[80vh] max-h-[850px] bg-[#8B0000] border-4 border-white/20 rounded-[3.5rem] shadow-[0_40px_100px_rgba(0,0,0,0.4)] relative z-10 overflow-hidden flex flex-col transition-all duration-700 mt-16`}>
+      <div className={`w-full ${state.step >= 5 ? 'max-w-2xl' : 'max-w-[340px] md:max-w-2xl lg:max-w-4xl'} h-[70vh] md:h-[80vh] max-h-[850px] bg-[#8B0000] border-4 border-white/20 rounded-[3.5rem] shadow-[0_40px_100px_rgba(0,0,0,0.4)] relative z-10 overflow-hidden flex flex-col transition-all duration-700`}>
 
         {/* Progress Navigation */}
         <div className="flex w-full h-1.5 bg-rose-100/50">
