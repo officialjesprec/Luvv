@@ -85,7 +85,7 @@ const ValentineCardTemplate = forwardRef<HTMLDivElement, ValentineCardTemplatePr
           variants={containerVariants}
           initial="initial"
           animate="animate"
-          className="z-10 flex flex-col items-center max-w-[900px]"
+          className="z-10 flex flex-col items-center max-w-[700px]"
         >
           {/* Top Ornament */}
           <motion.div variants={itemVariants} className="mb-12 flex items-center gap-8 text-[#FFC0CB] opacity-40">
