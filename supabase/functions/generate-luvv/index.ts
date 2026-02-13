@@ -87,9 +87,11 @@ Deno.serve(async (req) => {
         }
 
         // 2. AI FAILOVER SYSTEM
-        const prompt = `Write a ${tone} Valentine's message to my ${relationship}. 
-        Use the placeholder [RECIPIENT] for the recipient's name and [SENDER] for the sender's name.
-        The message should be signed from [SENDER]. Keep it under 100 words. 
+        const prompt = `Write a deep, heartfelt, and highly expressive ${tone} Valentine's message to my ${relationship}. 
+        Length: Around 400 words (a full-page love letter style).
+        Structure: Use multiple paragraphs and include beautiful, relevant emojis throughout to make it feel human and modern.
+        Placeholders: Use [RECIPIENT] for the recipient's name and [SENDER] for the sender's name.
+        The message should be signed from [SENDER].
         Return exactly THREE distinct options in JSON format with a key "messages" containing an array of strings.
         Crucial: Use the literal strings "[RECIPIENT]" and "[SENDER]" in the text.`;
 

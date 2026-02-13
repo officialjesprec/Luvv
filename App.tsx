@@ -444,6 +444,8 @@ const App: React.FC = () => {
                       message={currentMessage}
                       recipient={state.recipientName}
                       sender={state.senderName}
+                      relationship={state.relationship || undefined}
+                      tone={state.tone || undefined}
                       isPreview={true}
                     />
                   </div>

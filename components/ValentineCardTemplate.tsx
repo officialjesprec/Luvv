@@ -1,16 +1,25 @@
-
 import React, { forwardRef } from 'react';
 import { motion, Variants } from 'framer-motion';
+import { Relationship, Tone } from '../types';
 
 interface ValentineCardTemplateProps {
   message: string;
   recipient: string;
   sender: string;
+  relationship?: Relationship;
+  tone?: Tone;
   isPreview?: boolean;
 }
 
 const ValentineCardTemplate = forwardRef<HTMLDivElement, ValentineCardTemplateProps>(
-  ({ message, recipient, sender, isPreview = false }, ref) => {
+  ({ message, recipient, sender, relationship, tone, isPreview = false }, ref) => {
+    // Dynamic closing logic
+    const isRomantic = tone === 'Romantic' ||
+      relationship === 'Spouse' ||
+      relationship === 'Girlfriend' ||
+      relationship === 'Boyfriend';
+
+    const closingTag = isRomantic ? "Forever yours," : "Yours sincerely,";
     // Define variants with explicit type to fix motion prop mismatches
     const containerVariants: Variants = {
       initial: { opacity: 0 },
@@ -97,16 +106,23 @@ const ValentineCardTemplate = forwardRef<HTMLDivElement, ValentineCardTemplatePr
             to {recipient}
           </motion.div>
 
-          <motion.div variants={itemVariants} className="relative mb-24">
+          <motion.div variants={itemVariants} className="relative mb-24 w-full">
             <div className="absolute -top-16 -left-12 text-[#FFC0CB] text-9xl opacity-10 font-serif">“</div>
-            <p className="text-[#FFFDD0] font-serif text-[64px] leading-[1.3] italic px-12 drop-shadow-lg">
+            <div
+              className="text-[#FFFDD0] font-serif italic px-12 drop-shadow-lg whitespace-pre-wrap overflow-hidden flex flex-col justify-center"
+              style={{
+                fontSize: message.length > 800 ? '24px' : message.length > 500 ? '32px' : message.length > 300 ? '42px' : '64px',
+                lineHeight: '1.4',
+                maxHeight: '800px'
+              }}
+            >
               {message}
-            </p>
+            </div>
             <div className="absolute -bottom-24 -right-12 text-[#FFC0CB] text-9xl opacity-10 font-serif">”</div>
           </motion.div>
 
           <motion.div variants={itemVariants} className="mt-12 flex flex-col items-center">
-            <div className="text-[#FFC0CB] font-bold tracking-[0.4em] uppercase text-2xl mb-6 opacity-80">Forever yours,</div>
+            <div className="text-[#FFC0CB] font-bold tracking-[0.4em] uppercase text-2xl mb-6 opacity-80">{closingTag}</div>
             <p className="text-[#FFFDD0] font-serif text-8xl tracking-wide">{sender}</p>
           </motion.div>
 
