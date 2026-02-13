@@ -50,7 +50,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     // 3. AI FAILOVER SYSTEM
-    const prompt = `You are a professional romantic writer for Luvv. Write a short, soulful message based on the relationship and tone provided. Max 50 words.
+    const prompt = `You are a professional romantic writer for Luvv. Write a short, soulful message based on the relationship and tone provided. Max 400 words.
   Context: ${relationship}, Tone: ${tone}, To: ${recipient}, From: ${sender}.
   Return only the message text.`;
 
@@ -97,7 +97,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
                 body: JSON.stringify({
                     model: 'llama-3.1-8b-instant',
                     messages: [
-                        { role: 'system', content: 'You are a professional romantic writer.' },
+                        { role: 'system', content: 'You are a professional writer.' },
                         { role: 'user', content: prompt },
                     ],
                 }),
