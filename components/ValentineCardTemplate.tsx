@@ -111,7 +111,7 @@ const ValentineCardTemplate = forwardRef<HTMLDivElement, ValentineCardTemplatePr
             <div
               className="text-[#FFFDD0] font-serif italic px-12 drop-shadow-lg whitespace-pre-wrap overflow-hidden flex flex-col justify-center"
               style={{
-                fontSize: message.length > 800 ? '24px' : message.length > 500 ? '32px' : message.length > 300 ? '54px' : '64px',
+                fontSize: message.length > 800 ? '24px' : message.length > 500 ? '32px' : message.length > 300 ? '48px' : '64px',
                 lineHeight: '1.2',
                 maxHeight: '850px'
               }}
