@@ -1,4 +1,4 @@
-import React from 'react';
+import { Link } from 'react-router-dom';
 import { Home, BarChart, ExternalLink } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
@@ -10,9 +10,9 @@ const AdminDashboard: React.FC = () => {
                         <h1 className="text-3xl font-serif font-bold text-white mb-2">Luvv HQ</h1>
                         <p className="text-gray-400">Overview & Analytics</p>
                     </div>
-                    <a href="/" className="flex items-center gap-2 px-6 py-3 bg-white/10 rounded-full hover:bg-white/20 transition-all text-sm font-bold">
+                    <Link to="/" className="flex items-center gap-2 px-6 py-3 bg-white/10 rounded-full hover:bg-white/20 transition-all text-sm font-bold">
                         <Home size={16} /> Open App
-                    </a>
+                    </Link>
                 </header>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">

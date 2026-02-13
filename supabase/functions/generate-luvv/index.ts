@@ -11,10 +11,15 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper to normalize messages that might be returned as JSON strings within the array
 function normalizeMessages(msgs: any[]): string[] {
     return msgs.map(m => {
+        // If it's an object, try to find a text field
+        if (typeof m === 'object' && m !== null) {
+            return m.message || m.text || m.content || JSON.stringify(m);
+        }
+
         if (typeof m !== 'string') return String(m);
+
         const trimmed = m.trim();
         if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
             try {
