@@ -185,7 +185,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="h-screen max-h-screen flex flex-col items-center justify-between p-4 bg-[#FFC0CB] relative overflow-hidden font-sans pt-20 pb-6">
+    <div className="h-[100dvh] w-screen flex flex-col items-center justify-between bg-[#FFC0CB] relative overflow-hidden font-sans pt-[env(safe-area-inset-top,20px)] pb-[env(safe-area-inset-bottom,24px)] px-4">
       <SpeedInsights />
       <Analytics />
 
