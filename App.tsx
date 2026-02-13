@@ -398,7 +398,7 @@ const App: React.FC = () => {
                       </div>
                       <div className="flex gap-2">
                         <div className="relative flex-1">
-                          <input type="tel" placeholder="+1234567890" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)}
+                          <input type="tel" placeholder="08123456789" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)}
                             className={`w-full px-6 py-5 rounded-[2rem] bg-white/5 text-pink-100 outline-none transition-all text-sm border ${whatsappNumber && !isWhatsappValid ? 'border-red-500' : 'border-white/10 focus:border-pink-500/50'}`} />
                           {whatsappNumber && !isWhatsappValid && (
                             <span className="absolute -bottom-5 left-4 text-[8px] text-red-400 font-bold uppercase tracking-widest">Invalid number</span>

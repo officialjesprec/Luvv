@@ -1,6 +1,6 @@
-
 import { Relationship, Tone } from "../types";
 import { GeminiError } from "../error-classes";
+import { supabase } from "./supabase";
 
 export const generateValentineMessages = async (
     recipientName: string,
@@ -9,36 +9,19 @@ export const generateValentineMessages = async (
     tone: Tone
 ): Promise<string[]> => {
     try {
-        const response = await fetch('/api/generate-luvv', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+        const { data, error } = await supabase.functions.invoke('generate-luvv', {
+            body: {
                 recipient: recipientName,
                 sender: senderName,
-                relationship,
-                tone
-            }),
+                relationship: relationship,
+                tone: tone
+            }
         });
 
-        if (!response.ok) {
-            const error: any = await response.json().catch(() => ({}));
-            throw new Error(error.error || `Server Error: ${response.status}`);
-        }
+        if (error) throw error;
+        if (data.error) throw new Error(data.error);
 
-        const data: any = await response.json();
-
-        // Log the provider for analytics
-        if (data.provider) {
-            console.log(`Message generated via: ${data.provider}`);
-        }
-
-        if (data.messages && Array.isArray(data.messages)) {
-            return data.messages;
-        }
-
-        throw new GeminiError("Invalid response format from server.");
+        return data.messages;
 
     } catch (error: any) {
         console.error("Luvv Generation Error:", error);

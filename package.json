@@ -24,14 +24,11 @@
     "react-router-dom": "^7.13.0"
   },
   "devDependencies": {
-    "@cloudflare/workerd-windows-64": "^1.20260212.0",
-    "@cloudflare/workers-types": "^4.20260212.0",
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0",
-    "wrangler": "^4.65.0"
+    "vite": "^6.2.0"
   }
 }

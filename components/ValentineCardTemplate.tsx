@@ -85,6 +85,10 @@ const ValentineCardTemplate = forwardRef<HTMLDivElement, ValentineCardTemplatePr
             <div className="w-40 h-[2px] bg-gradient-to-l from-transparent to-[#FFC0CB]"></div>
           </motion.div>
 
+          <motion.div variants={itemVariants} className="text-white font-serif italic text-3xl mb-2 opacity-90">
+            Made with Luvv
+          </motion.div>
+
           <motion.h2 variants={itemVariants} className="text-[#FFC0CB] font-serif italic text-8xl mb-8 tracking-tight">
             Happy Valentine's Day
           </motion.h2>
@@ -109,17 +113,17 @@ const ValentineCardTemplate = forwardRef<HTMLDivElement, ValentineCardTemplatePr
           {/* Bottom Ornament */}
           <motion.div variants={itemVariants} className="mt-20 flex items-center gap-8 text-[#FFC0CB] opacity-40">
             <div className="w-24 h-[2px] bg-gradient-to-r from-transparent to-[#FFC0CB]"></div>
-            <div className="text-2xl italic font-serif">2025</div>
+            <div className="text-2xl italic font-serif">2026</div>
             <div className="w-24 h-[2px] bg-gradient-to-l from-transparent to-[#FFC0CB]"></div>
           </motion.div>
-        </motion.div>
 
-        {/* Subtle Branding */}
-        <div className="absolute bottom-16 w-full text-center">
-          <span className="text-lg text-[#FFC0CB] opacity-40 uppercase tracking-[0.6em] font-serif italic">
-            Crafted with Love at Luvv.com
-          </span>
-        </div>
+          {/* Designed by Jesprec */}
+          <motion.div variants={itemVariants} className="mt-12">
+            <span className="text-xl text-[#FFC0CB] opacity-40 uppercase tracking-[0.6em] font-serif italic">
+              Designed by Jesprec
+            </span>
+          </motion.div>
+        </motion.div>
       </div>
     );
   }
