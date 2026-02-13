@@ -359,7 +359,7 @@ const App: React.FC = () => {
               </div>
 
               <div className="mt-8 flex gap-4">
-                <button onClick={prevStep} className="p-5 rounded-full bg-white/5 text-pink-200 border border-white/10 hover:bg-white/10 transition-all"><ChevronLeft size={24} /></button>
+                <button onClick={() => setState(prev => ({ ...prev, step: 3 }))} className="p-5 rounded-full bg-white/5 text-pink-200 border border-white/10 hover:bg-white/10 transition-all"><ChevronLeft size={24} /></button>
                 <button
                   disabled={state.selectedMessageIndex === null}
                   onClick={nextStep}
@@ -414,19 +414,22 @@ const App: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <button
-                        onClick={handleShareCard}
-                        className="flex items-center justify-center gap-2 bg-pink-500 text-white py-5 rounded-[2rem] font-bold shadow-2xl shadow-pink-500/20 transition-all text-sm uppercase tracking-widest hover:scale-105 active:scale-95"
-                      >
-                        <Share2 size={18} /> Share
-                      </button>
-                      <button
-                        onClick={handleDownloadCard}
-                        className="flex items-center justify-center gap-2 bg-white/5 text-white py-5 rounded-[2rem] font-bold border border-white/10 transition-all text-sm uppercase tracking-widest hover:scale-105 active:scale-95"
-                      >
-                        <Download size={18} /> Download
-                      </button>
+                    <div className="flex gap-4">
+                      <button onClick={() => setState(prev => ({ ...prev, step: 5 }))} className="p-5 rounded-full bg-white/5 text-pink-200 border border-white/10 hover:bg-white/10 transition-all"><ChevronLeft size={24} /></button>
+                      <div className="flex-1 grid grid-cols-2 gap-4">
+                        <button
+                          onClick={handleShareCard}
+                          className="flex items-center justify-center gap-2 bg-pink-500 text-white py-5 rounded-[2rem] font-bold shadow-2xl shadow-pink-500/20 transition-all text-sm uppercase tracking-widest hover:scale-105 active:scale-95"
+                        >
+                          <Share2 size={18} /> Share
+                        </button>
+                        <button
+                          onClick={handleDownloadCard}
+                          className="flex items-center justify-center gap-2 bg-white/5 text-white py-5 rounded-[2rem] font-bold border border-white/10 transition-all text-sm uppercase tracking-widest hover:scale-105 active:scale-95"
+                        >
+                          <Download size={18} /> Download
+                        </button>
+                      </div>
                     </div>
 
                     <button
