@@ -38,7 +38,7 @@ export const generateLuvv = async (body: RequestBody) => {
     }
 
     // 3. AI FAILOVER SYSTEM
-    const prompt = `You are a professional romantic writer for Luvv. Write a short, soulful message based on the relationship and tone provided. Max 400 words.
+    const prompt = `You are a professional romantic writer for Luvv. Write a short, soulful message based on the relationship and tone provided. Max 300 words.
   Context: ${relationship}, Tone: ${tone}, To: ${recipient}, From: ${sender}.
   Return only the message text.`;
 
