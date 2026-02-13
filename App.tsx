@@ -159,7 +159,17 @@ const App: React.FC = () => {
 
   const handleSendWhatsApp = () => {
     if (!currentMessage || !isWhatsappValid) return;
-    const cleanNumber = whatsappNumber.replace(/\D/g, '');
+    let cleanNumber = whatsappNumber.replace(/\D/g, '');
+
+    // Auto-prepend Nigerian country code (234) for common local formats
+    if (cleanNumber.startsWith('0')) {
+      cleanNumber = '234' + cleanNumber.substring(1);
+    } else if (cleanNumber.length === 10 || (cleanNumber.length === 11 && !cleanNumber.startsWith('234'))) {
+      if (!cleanNumber.startsWith('234')) {
+        cleanNumber = '234' + (cleanNumber.length === 11 ? cleanNumber.substring(1) : cleanNumber);
+      }
+    }
+
     const appLink = `\n\nCreate your own Valentine at: https://bit.ly/luvvapp`;
     const fullText = currentMessage + appLink;
     const url = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(fullText)}`;
@@ -244,7 +254,7 @@ const App: React.FC = () => {
                 <h1 className="text-4xl font-serif font-bold text-white mb-2">Who's the lucky one?</h1>
                 <p className="text-pink-100/40 text-sm">Select your connection.</p>
               </div>
-              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 overflow-y-auto max-h-[380px] no-scrollbar pr-1 pb-4 pt-2">
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 overflow-y-auto max-h-[380px] no-scrollbar px-4 pb-4 pt-2">
                 {RELATIONSHIP_OPTIONS.map((opt) => {
                   const isSelected = state.relationship === opt.label;
                   return (
@@ -429,7 +439,7 @@ const App: React.FC = () => {
                 </div>
 
                 <div className="w-full aspect-[9/16] overflow-hidden rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.5)] relative border-8 border-white/10 group bg-black">
-                  <div className="absolute inset-0 scale-[0.45] origin-top-left xl:scale-[0.5]" style={{ width: '1080px', height: '1920px' }}>
+                  <div className="absolute inset-0 scale-[0.38] md:scale-[0.45] origin-top-left xl:scale-[0.5]" style={{ width: '1080px', height: '1920px' }}>
                     <ValentineCardTemplate
                       message={currentMessage}
                       recipient={state.recipientName}
@@ -466,7 +476,7 @@ const App: React.FC = () => {
 
                     <div className="flex gap-4">
                       <button onClick={() => setState(prev => ({ ...prev, step: 5 }))} className="p-5 rounded-full bg-white/5 text-pink-200 border border-white/10 hover:bg-white/10 transition-all"><ChevronLeft size={24} /></button>
-                      <div className="flex-1 grid grid-cols-2 gap-4">
+                      <div className="flex-1 flex flex-col sm:grid sm:grid-cols-2 gap-4">
                         <button
                           onClick={handleShareCard}
                           className="flex items-center justify-center gap-2 bg-pink-500 text-white py-5 rounded-[2rem] font-bold shadow-2xl shadow-pink-500/20 transition-all text-sm uppercase tracking-widest hover:scale-105 active:scale-95"
@@ -475,7 +485,7 @@ const App: React.FC = () => {
                         </button>
                         <button
                           onClick={handleDownloadCard}
-                          className="flex items-center justify-center gap-2 bg-white/5 text-white py-5 rounded-[2rem] font-bold border border-white/10 transition-all text-sm uppercase tracking-widest hover:scale-105 active:scale-95"
+                          className="flex items-center justify-center gap-2 bg-white/5 text-white py-5 rounded-[2rem] font-bold border border-white/10 transition-all text-xs sm:text-sm uppercase tracking-widest hover:scale-105 active:scale-95"
                         >
                           <Download size={18} /> Download
                         </button>
