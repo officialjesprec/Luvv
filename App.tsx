@@ -160,7 +160,7 @@ const App: React.FC = () => {
   const handleSendWhatsApp = () => {
     if (!currentMessage || !isWhatsappValid) return;
     const cleanNumber = whatsappNumber.replace(/\D/g, '');
-    const appLink = `\n\nCreate your own Valentine at: ${window.location.origin} `;
+    const appLink = `\n\nCreate your own Valentine at: https://bit.ly/luvvapp`;
     const fullText = currentMessage + appLink;
     const url = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(fullText)}`;
     window.open(url, '_blank');
