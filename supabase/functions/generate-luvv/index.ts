@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
 
         // 2. AI FAILOVER SYSTEM
         const prompt = `Write a deep, heartfelt, and highly expressive ${tone} Valentine's message to my ${relationship}. 
-        Length: Around 200 words (a full-page love letter style).
+        Length: Around 200 words (a love letter style).
         Structure: Use multiple paragraphs and include beautiful, relevant emojis throughout to make it feel human and modern.
         Placeholders: Use [RECIPIENT] for the recipient's name and [SENDER] for the sender's name.
         The message should be signed from [SENDER].
