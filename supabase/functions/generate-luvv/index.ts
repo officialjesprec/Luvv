@@ -23,15 +23,24 @@ Deno.serve(async (req) => {
             throw new Error('Missing required fields');
         }
 
+        if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+            console.error('CRITICAL: Supabase environment variables are missing');
+            throw new Error('Internal Server Error: Missing configuration');
+        }
+
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-        // 1. Check Cache
+        // 1. Check Cache (using lowercase table name)
         const { data: cachedMessages, error: cacheError } = await supabase
-            .from('Message_Library')
+            .from('message_library')
             .select('message_text')
             .eq('relationship', relationship)
             .eq('tone', tone)
             .limit(3);
+
+        if (cacheError) {
+            console.error('Database Cache Error:', cacheError.message);
+        }
 
         if (!cacheError && cachedMessages && cachedMessages.length >= 3) {
             console.log('Cache Hit');
@@ -75,6 +84,8 @@ Deno.serve(async (req) => {
                             provider = 'gemini-1.5-flash';
                         }
                     }
+                } else {
+                    console.error('Gemini API Error:', await geminiResp.text());
                 }
             } catch (e) {
                 console.error('Gemini Exception:', e);
@@ -111,6 +122,8 @@ Deno.serve(async (req) => {
                             provider = 'groq-llama-3.1';
                         }
                     }
+                } else {
+                    console.error('Groq API Error:', await groqResp.text());
                 }
             } catch (e) {
                 console.error('Groq Exception:', e);
@@ -121,18 +134,22 @@ Deno.serve(async (req) => {
             console.log('AI models failed. Attempting random DB fallback...');
             try {
                 const { data: randomMessages, error: randomError } = await supabase
-                    .from('Message_Library')
+                    .from('message_library')
                     .select('message_text')
                     .eq('relationship', relationship)
                     .eq('tone', tone)
                     .limit(3);
+
+                if (randomError) {
+                    console.error('Database Random Fallback Error:', randomError.message);
+                }
 
                 if (!randomError && randomMessages && randomMessages.length > 0) {
                     messages = randomMessages.map(m => m.message_text);
                     provider = 'db-fallback-random';
                 }
             } catch (e) {
-                console.error('Fallback Error:', e);
+                console.error('Fallback Exception:', e);
             }
         }
 
@@ -150,11 +167,12 @@ Deno.serve(async (req) => {
                 provider: provider
             }));
 
-            try {
-                await supabase.from('Message_Library').insert(dbEntries);
-                console.log('Saved to DB');
-            } catch (e) {
-                console.error('DB Save Error:', e);
+            const { error: insertError } = await supabase.from('message_library').insert(dbEntries);
+
+            if (insertError) {
+                console.error('Database Insert ERROR:', insertError.message);
+            } else {
+                console.log('Successfully saved to DB');
             }
         }
 
@@ -164,6 +182,7 @@ Deno.serve(async (req) => {
         );
 
     } catch (error: any) {
+        console.error('Final Edge Function Error:', error.message);
         return new Response(
             JSON.stringify({ error: error.message }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
