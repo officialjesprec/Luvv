@@ -38,7 +38,7 @@ export const generateLuvv = async (body: RequestBody) => {
     }
 
     // 3. AI FAILOVER SYSTEM
-    const prompt = `You are a professional romantic writer for Luvv. Write a short, soulful message based on the relationship and tone provided. Max 300 words.
+    const prompt = `You are a professional writer for Luvv. Write a short, soulful message based on the relationship and tone provided. Max 150 words.
   Context: ${relationship}, Tone: ${tone}, To: ${recipient}, From: ${sender}.
   Return only the message text.`;
 
@@ -50,7 +50,7 @@ export const generateLuvv = async (body: RequestBody) => {
         try {
             console.log('Trying Gemini...');
             const geminiResp = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.VITE_GEMINI_API_KEY}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.VITE_GEMINI_API_KEY}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
