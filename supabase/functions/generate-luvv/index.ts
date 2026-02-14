@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
         const { recipient, sender, relationship, tone } = await req.json();
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-        const prompt = `Write 3 deep, soulful ${tone} Valentine's love letters (around 200 words each) for my ${relationship}. 
+        const prompt = `Write 3 deep, soulful ${tone} Valentine's love letters (around 150 words each) for my ${relationship}. 
         Use [RECIPIENT] and [SENDER] as placeholders. 
         IMPORTANT: Return ONLY a valid JSON object with the key "messages" containing an array of the 3 strings.`;
 
