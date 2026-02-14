@@ -18,13 +18,13 @@ export const generateValentineMessages = async (
   const systemInstruction = `You are an expert greeting card writer and emotional intelligence specialist. 
 Your goal is to write three distinct Valentine's Day message options that feel deeply personal, avoid clichés, and perfectly match the social hierarchy and tone requested.`;
 
-  const prompt = `Write a ${tone} Valentine's message to my ${relationship} named ${recipientName}. The message should be signed from ${senderName}. Keep it under 100 words.
+  const prompt = `Write a ${tone} Valentine's message to my ${relationship} named ${recipientName}. The message should be signed from ${senderName}. Keep it max of 150 words.
 
 Return exactly THREE distinct options in JSON format.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         systemInstruction,

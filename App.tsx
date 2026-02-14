@@ -22,6 +22,7 @@ const App: React.FC = () => {
     tone: null,
     generatedMessages: [],
     selectedMessageIndex: null,
+    editedMessage: '',
     isLoading: false,
     error: null,
   });
@@ -103,7 +104,8 @@ const App: React.FC = () => {
         generatedMessages: generated,
         step: 5,
         isLoading: false,
-        selectedMessageIndex: 0
+        selectedMessageIndex: 0,
+        editedMessage: generated[0] || ''
       }));
     } catch (err: any) {
       console.error(err);
@@ -116,9 +118,9 @@ const App: React.FC = () => {
     }
   };
 
-  const currentMessage = state.selectedMessageIndex !== null
+  const currentMessage = state.editedMessage || (state.selectedMessageIndex !== null
     ? state.generatedMessages[state.selectedMessageIndex]
-    : '';
+    : '');
 
   const generateImageData = async () => {
     if (!cardRef.current) return null;
@@ -153,6 +155,10 @@ const App: React.FC = () => {
       console.error('Sharing/Download failed:', err);
       alert("Could not share or download the image. Please try copying the text instead.");
     }
+  };
+
+  const handleConfirmMessage = () => {
+    setState(prev => ({ ...prev, step: 6 }));
   };
 
   const handleDownloadCard = async () => {
@@ -213,7 +219,7 @@ const App: React.FC = () => {
 
         {/* Progress Navigation */}
         <div className="flex w-full h-1.5 bg-rose-100/50">
-          {[1, 2, 3, 4, 5, 6].map((s) => (
+          {[1, 2, 3, 4, 5, 6, 7].map((s) => (
             <div
               key={s}
               className={`flex-1 transition-colors duration-500 ${state.step >= s ? 'bg-[#8B0000]' : 'bg-[#FFC0CB]'}`}
@@ -411,7 +417,11 @@ const App: React.FC = () => {
                     return (
                       <div
                         key={idx}
-                        onClick={() => setState(prev => ({ ...prev, selectedMessageIndex: idx }))}
+                        onClick={() => setState(prev => ({
+                          ...prev,
+                          selectedMessageIndex: idx,
+                          editedMessage: state.generatedMessages[idx]
+                        }))}
                         className={`w-full p-6 rounded-[2rem] border-2 transition-all cursor-pointer text-center relative ${isSelected
                           ? 'bg-gradient-to-br from-pink-600 to-crimson-700 border-pink-400 text-white shadow-lg'
                           : 'bg-white/5 border-white/10 text-pink-100/60 hover:bg-white/10'
@@ -433,7 +443,7 @@ const App: React.FC = () => {
                 <button onClick={() => setState(prev => ({ ...prev, step: 3 }))} className="p-5 rounded-full bg-white/5 text-pink-200 border border-white/10 hover:bg-white/10 transition-all"><ChevronLeft size={24} /></button>
                 <button
                   disabled={state.selectedMessageIndex === null}
-                  onClick={nextStep}
+                  onClick={handleConfirmMessage}
                   className={`flex-1 flex items-center justify-center gap-2 py-5 rounded-full font-bold transition-all uppercase tracking-widest text-sm active:scale-95 text-white disabled:bg-[#3D0000] disabled:opacity-30 ${state.selectedMessageIndex !== null ? 'bg-[#FF4D6D] shadow-[0_0_40px_rgba(255,77,109,0.8)]' : ''}`}
                 >
                   Confirm Selection <ChevronRight size={20} />
@@ -443,6 +453,40 @@ const App: React.FC = () => {
           )}
 
           {state.step === 6 && (
+            <div className="flex-1 flex flex-col">
+              <div className="text-center mb-8">
+                <h1 className="text-4xl font-serif font-bold text-white mb-2 italic">Refine Your Message</h1>
+                <p className="text-pink-100/40 text-sm">Add your final touch before sending.</p>
+              </div>
+
+              <div className="flex-1 flex flex-col space-y-6">
+                <textarea
+                  value={state.editedMessage}
+                  onChange={(e) => setState(prev => ({ ...prev, editedMessage: e.target.value }))}
+                  className="w-full flex-1 p-8 rounded-[3rem] bg-white/5 border-2 border-white/10 text-white font-serif italic text-lg leading-relaxed outline-none focus:border-pink-500/50 transition-all resize-none shadow-inner"
+                  placeholder="Type your message here..."
+                />
+
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setState(prev => ({ ...prev, step: 5 }))}
+                    className="p-5 rounded-full bg-white/5 text-pink-200 border border-white/10 hover:bg-white/10 transition-all active:scale-95"
+                  >
+                    <ChevronLeft size={24} />
+                  </button>
+                  <button
+                    onClick={nextStep}
+                    disabled={!state.editedMessage.trim()}
+                    className={`flex-1 flex items-center justify-center gap-2 py-5 rounded-full font-bold transition-all uppercase tracking-widest text-sm active:scale-95 text-white disabled:bg-[#3D0000] disabled:opacity-30 ${state.editedMessage.trim() ? 'bg-[#FF4D6D] shadow-[0_0_40px_rgba(255,77,109,0.8)]' : ''}`}
+                  >
+                    Proceed to Delivery <ChevronRight size={20} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {state.step === 7 && (
             <div className="flex-1 flex flex-col items-center">
               <div className="w-full flex flex-col items-center max-w-lg">
                 <div className="text-center mb-8">
@@ -488,7 +532,7 @@ const App: React.FC = () => {
                     </div>
 
                     <div className="flex gap-4">
-                      <button onClick={() => setState(prev => ({ ...prev, step: 5 }))} className="p-5 rounded-full bg-white/5 text-pink-200 border border-white/10 hover:bg-white/10 transition-all"><ChevronLeft size={24} /></button>
+                      <button onClick={() => setState(prev => ({ ...prev, step: 6 }))} className="p-5 rounded-full bg-white/5 text-pink-200 border border-white/10 hover:bg-white/10 transition-all"><ChevronLeft size={24} /></button>
                       <div className="flex-1 flex flex-col sm:grid sm:grid-cols-2 gap-4">
                         <button
                           onClick={handleShareCard}

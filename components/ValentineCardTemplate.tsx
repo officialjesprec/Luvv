@@ -85,7 +85,7 @@ const ValentineCardTemplate = forwardRef<HTMLDivElement, ValentineCardTemplatePr
           variants={containerVariants}
           initial="initial"
           animate="animate"
-          className="z-10 flex flex-col items-center max-w-[900px]"
+          className="z-10 flex flex-col items-center max-w-[700px]"
         >
           {/* Top Ornament */}
           <motion.div variants={itemVariants} className="mb-12 flex items-center gap-8 text-[#FFC0CB] opacity-40">
@@ -111,9 +111,9 @@ const ValentineCardTemplate = forwardRef<HTMLDivElement, ValentineCardTemplatePr
             <div
               className="text-[#FFFDD0] font-serif italic px-12 drop-shadow-lg whitespace-pre-wrap overflow-hidden flex flex-col justify-center"
               style={{
-                fontSize: message.length > 800 ? '24px' : message.length > 500 ? '32px' : message.length > 300 ? '42px' : '64px',
-                lineHeight: '1.4',
-                maxHeight: '800px'
+                fontSize: message.length > 800 ? '24px' : message.length > 500 ? '32px' : message.length > 300 ? '48px' : '64px',
+                lineHeight: '1.2',
+                maxHeight: '850px'
               }}
             >
               {message}

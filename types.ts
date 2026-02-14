@@ -11,7 +11,10 @@ export type Relationship =
   | 'Brother'
   | 'Cousin'
   | 'Pastor'
-  | 'Employer';
+  | 'Employer'
+  | 'Ex'
+  | 'Customer'
+  | 'Crush';
 
 export type Tone = 'Romantic' | 'Professional' | 'Friendly' | 'Polite' | 'Funny';
 
@@ -23,6 +26,7 @@ export interface AppState {
   tone: Tone | null;
   generatedMessages: string[];
   selectedMessageIndex: number | null;
+  editedMessage: string;
   isLoading: boolean;
   error: string | null;
 }
