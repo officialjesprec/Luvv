@@ -17,8 +17,10 @@ interface Stats {
     totalGeneratedYesterday: number;
     dailyMessages: { date: string; count: number }[];
     providers: {
-        gemini: { messages: number; requests: number };
-        groq: { messages: number; requests: number };
+        geminiFlash: { messages: number; requests: number };
+        geminiFlashLite: { messages: number; requests: number };
+        groq8B: { messages: number; requests: number };
+        groq70B: { messages: number; requests: number };
         safetyNet: { messages: number; requests: number };
     };
     health: {
@@ -36,8 +38,10 @@ const AdminDashboard: React.FC = () => {
         totalGeneratedYesterday: 0,
         dailyMessages: [],
         providers: {
-            gemini: { messages: 0, requests: 0 },
-            groq: { messages: 0, requests: 0 },
+            geminiFlash: { messages: 0, requests: 0 },
+            geminiFlashLite: { messages: 0, requests: 0 },
+            groq8B: { messages: 0, requests: 0 },
+            groq70B: { messages: 0, requests: 0 },
             safetyNet: { messages: 0, requests: 0 }
         },
         health: { latency: '0ms', load: '0%', aiStatus: 'Checking...' }
@@ -84,8 +88,10 @@ const AdminDashboard: React.FC = () => {
                 const relCounts: Record<string, number> = {};
                 const dailyCounts: Record<string, number> = {};
                 const providerCounts = {
-                    gemini: { messages: 0, requests: 0 },
-                    groq: { messages: 0, requests: 0 },
+                    geminiFlash: { messages: 0, requests: 0 },
+                    geminiFlashLite: { messages: 0, requests: 0 },
+                    groq8B: { messages: 0, requests: 0 },
+                    groq70B: { messages: 0, requests: 0 },
                     safetyNet: { messages: 0, requests: 0 }
                 };
 
@@ -104,8 +110,11 @@ const AdminDashboard: React.FC = () => {
                     if (item.created_at >= todayStart) generatedToday++;
                     if (item.created_at >= yesterdayStart && item.created_at < todayStart) generatedYesterday++;
 
-                    if (item.provider?.toLowerCase().includes('gemini')) providerCounts.gemini.messages++;
-                    else if (item.provider?.toLowerCase().includes('groq')) providerCounts.groq.messages++;
+                    const provider = item.provider?.toLowerCase() || '';
+                    if (provider.includes('gemini-2.5-flash-lite')) providerCounts.geminiFlashLite.messages++;
+                    else if (provider.includes('gemini')) providerCounts.geminiFlash.messages++;
+                    else if (provider.includes('groq-llama-3.1-8b')) providerCounts.groq8B.messages++;
+                    else if (provider.includes('groq')) providerCounts.groq70B.messages++;
 
                     // Safety Net "Messages" represents the total pool available in the reservoir
                     providerCounts.safetyNet.messages = usageData.length;
@@ -113,8 +122,10 @@ const AdminDashboard: React.FC = () => {
 
                 aiLogs?.forEach(log => {
                     const model = log.model_name?.toLowerCase() || '';
-                    if (model.includes('gemini')) providerCounts.gemini.requests++;
-                    else if (model.includes('groq')) providerCounts.groq.requests++;
+                    if (model.includes('flash-lite')) providerCounts.geminiFlashLite.requests++;
+                    else if (model.includes('gemini')) providerCounts.geminiFlash.requests++;
+                    else if (model.includes('3.1') || model.includes('8b')) providerCounts.groq8B.requests++;
+                    else if (model.includes('groq')) providerCounts.groq70B.requests++;
                     else if (model.includes('safety-net')) providerCounts.safetyNet.requests++;
                 });
 
@@ -182,6 +193,26 @@ const AdminDashboard: React.FC = () => {
                     </Link>
                 </header>
 
+                {/* Trending Pill */}
+                <div className="mb-8 flex items-center gap-4 bg-gradient-to-r from-emerald-500/20 to-green-600/20 backdrop-blur-xl border border-emerald-500/30 rounded-full px-8 py-4 shadow-lg">
+                    <div className="flex items-center gap-2 px-4 py-1.5 bg-emerald-500/30 rounded-full">
+                        <TrendingUp size={16} className="text-emerald-300" />
+                        <span className="text-xs font-bold text-emerald-200 uppercase tracking-wider">Trending</span>
+                    </div>
+                    <div className="flex items-center gap-6">
+                        {Object.entries(stats.relationships)
+                            .sort(([, a], [, b]) => b - a)
+                            .slice(0, 3)
+                            .map(([rel, count]) => (
+                                <div key={rel} className="flex items-center gap-2">
+                                    <span className="text-sm font-bold text-white">{rel}</span>
+                                    <span className="text-xl font-serif font-bold text-emerald-300">{count}</span>
+                                    <ArrowUpRight size={16} className="text-emerald-400" />
+                                </div>
+                            ))}
+                    </div>
+                </div>
+
                 {/* Performance Monitoring Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                     <StatCard title="Visits Today" value={stats.visits.today} icon={<Clock className="text-blue-400" />} trend={calculateTrend(stats.visits.today, stats.visits.yesterday)} sub="Since midnight" color="blue" />
@@ -202,10 +233,14 @@ const AdminDashboard: React.FC = () => {
                             <span className="text-[10px] font-bold text-pink-400 uppercase tracking-widest">Live API Feed</span>
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <ProviderCard label="Gemini 2.5 Flash" requests={stats.providers.gemini.requests} messages={stats.providers.gemini.messages} sub="Primary AI" color="pink" />
-                        <ProviderCard label="Groq Llama 3.1" requests={stats.providers.groq.requests} messages={stats.providers.groq.messages} sub="Failover Provider" color="amber" />
-                        <ProviderCard label="Safety Net" requests={stats.providers.safetyNet.requests} messages={stats.providers.safetyNet.messages} sub="Database Backups" color="blue" />
+                    <div className="overflow-x-auto no-scrollbar pb-4">
+                        <div className="flex gap-6 min-w-max px-2">
+                            <ProviderCard label="Gemini Flash" requests={stats.providers.geminiFlash.requests} messages={stats.providers.geminiFlash.messages} sub="High Quality" color="pink" />
+                            <ProviderCard label="Gemini Flash-Lite" requests={stats.providers.geminiFlashLite.requests} messages={stats.providers.geminiFlashLite.messages} sub="High Volume" color="rose" />
+                            <ProviderCard label="Groq Llama 8B" requests={stats.providers.groq8B.requests} messages={stats.providers.groq8B.messages} sub="Fast Speed" color="amber" />
+                            <ProviderCard label="Groq Llama 70B" requests={stats.providers.groq70B.requests} messages={stats.providers.groq70B.messages} sub="High Capability" color="orange" />
+                            <ProviderCard label="Safety Net" requests={stats.providers.safetyNet.requests} messages={stats.providers.safetyNet.messages} sub="Database Backup" color="blue" />
+                        </div>
                     </div>
                 </div>
 
@@ -240,28 +275,36 @@ const AdminDashboard: React.FC = () => {
                                         })}
                                 </div>
                             ) : (
-                                <div className="h-[280px] w-full flex items-end gap-3 px-2 overflow-x-auto no-scrollbar pb-6 pt-12">
-                                    {stats.dailyMessages.map((d, i) => (
-                                        <div key={i} className="min-w-[85px] flex-1 flex flex-col items-center gap-4 group relative">
-                                            {/* Column Backdrop for better structure */}
-                                            <div className="absolute inset-x-0 bottom-10 top-0 bg-white/5 rounded-3xl -z-0"></div>
+                                <div className="h-[400px] w-full flex items-end gap-6 px-4 overflow-x-auto no-scrollbar pb-8 pt-12">
+                                    {Object.entries(stats.relationships)
+                                        .sort(([, a], [, b]) => b - a)
+                                        .slice(0, 6)
+                                        .map(([relationship, count]) => {
+                                            const maxCount = Math.max(...Object.values(stats.relationships));
+                                            const percentage = stats.totalGenerated > 0 ? (count / stats.totalGenerated) * 100 : 0;
+                                            return (
+                                                <div key={relationship} className="min-w-[200px] flex flex-col items-center gap-4 group relative">
+                                                    {/* Column Backdrop */}
+                                                    <div className="absolute inset-x-0 bottom-12 top-0 bg-white/5 rounded-3xl -z-0"></div>
 
-                                            <div className="relative w-full flex-1 flex flex-col justify-end z-10 px-2">
-                                                {/* Value Label - Always Visible and Prominent */}
-                                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center">
-                                                    <span className="text-xl font-serif font-bold text-pink-400 drop-shadow-[0_0_10px_rgba(236,72,153,0.3)]">{d.count}</span>
-                                                    <div className="w-1 h-3 bg-pink-500/20 rounded-full mt-1"></div>
+                                                    <div className="relative w-full flex-1 flex flex-col justify-end z-10 px-2">
+                                                        {/* Value Label */}
+                                                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                                                            <span className="text-2xl font-serif font-bold text-pink-400 drop-shadow-[0_0_10px_rgba(236,72,153,0.3)]">{count}</span>
+                                                            <span className="text-[10px] font-bold text-pink-400/60 mt-1">{percentage.toFixed(0)}%</span>
+                                                            <div className="w-1 h-3 bg-pink-500/20 rounded-full mt-1"></div>
+                                                        </div>
+
+                                                        {/* Bar - Wider and More Vibrant */}
+                                                        <div
+                                                            className="w-full bg-gradient-to-t from-pink-600 to-pink-500 rounded-t-3xl transition-all duration-1000 ease-out shadow-[0_0_25px_rgba(236,72,153,0.5)] hover:from-pink-500 hover:to-pink-400 cursor-help"
+                                                            style={{ height: `${Math.max((count / maxCount) * 100, 5)}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <span className="text-xs font-bold text-pink-100/60 uppercase text-center leading-tight h-10 flex items-center z-10">{relationship}</span>
                                                 </div>
-
-                                                {/* Bar - More Vibrant and Solid */}
-                                                <div
-                                                    className="w-full bg-pink-500 rounded-t-2xl transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(236,72,153,0.4)] hover:bg-pink-400 cursor-help"
-                                                    style={{ height: `${Math.max((d.count / Math.max(...stats.dailyMessages.map(dm => dm.count), 1)) * 100, 5)}%` }}
-                                                ></div>
-                                            </div>
-                                            <span className="text-[10px] font-bold text-pink-100/40 uppercase text-center leading-tight h-8 flex items-center z-10">{d.date}</span>
-                                        </div>
-                                    ))}
+                                            );
+                                        })}
                                 </div>
                             )}
                         </div>

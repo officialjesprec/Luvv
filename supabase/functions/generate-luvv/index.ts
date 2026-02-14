@@ -90,12 +90,43 @@ Deno.serve(async (req) => {
         IMPORTANT: The content MUST strictly follow the relationship context. If the relationship is not romantic (like Boss, Customer, or Pastor), the message MUST BE STRICTLY NON-ROMANTIC.
         Return ONLY a valid JSON object with the key "messages" containing an array of the 3 strings.`;
 
+        // === ROUND-ROBIN LOAD BALANCER ===
+        const PROVIDER_ROTATION_KEY = 'provider_rotation';
+        let providerRotation = (globalThis as any)[PROVIDER_ROTATION_KEY] || 0;
+        const providers = ['gemini-flash', 'gemini-flash-lite', 'groq-8b', 'groq-70b'];
+
+        function getNextProvider() {
+            const currentProvider = providers[providerRotation % providers.length];
+            providerRotation++;
+            (globalThis as any)[PROVIDER_ROTATION_KEY] = providerRotation;
+            return currentProvider;
+        }
+
+        // === RETRY LOGIC WITH EXPONENTIAL BACKOFF ===
+        async function tryProviderWithRetry(providerFn: () => Promise<any>, providerName: string, maxRetries = 2) {
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
+                try {
+                    const result = await providerFn();
+                    if (result) return result;
+                } catch (e) {
+                    console.error(`${providerName} attempt ${attempt + 1} failed:`, e);
+                    if (attempt < maxRetries - 1) {
+                        const backoffMs = 1000 * Math.pow(2, attempt);
+                        console.log(`Retrying ${providerName} in ${backoffMs}ms...`);
+                        await new Promise(r => setTimeout(r, backoffMs));
+                    }
+                }
+            }
+            return null;
+        }
+
         let messages: string[] = [];
         let provider = '';
 
-        // --- STEP 1: GEMINI 2.5 ---
-        if (GEMINI_API_KEY) {
-            console.log("Attempting Gemini Generation...");
+        // --- GEMINI 2.5 FLASH (20 req/day, high quality) ---
+        async function tryGeminiFlash() {
+            if (!GEMINI_API_KEY) return null;
+            console.log("Attempting Gemini 2.5 Flash...");
             try {
                 const geminiResp = await fetch(
                     `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -105,28 +136,56 @@ Deno.serve(async (req) => {
                         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
                     }
                 );
+
                 if (geminiResp.ok) {
                     const data = await geminiResp.json();
                     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-                    messages = extractMessages(rawText);
-                    if (messages.length > 0) {
-                        provider = 'gemini-2.5-flash';
-                        console.log("Gemini Success!");
-                    } else {
-                        console.log("Gemini returned empty or invalid format");
+                    const msgs = extractMessages(rawText);
+                    if (msgs.length > 0) {
+                        console.log("Gemini Flash Success!");
+                        return { messages: msgs, provider: 'gemini-2.5-flash' };
                     }
-                } else {
-                    const errText = await geminiResp.text();
-                    console.error("Gemini API Error:", geminiResp.status, errText);
                 }
-            } catch (e) { console.error('Gemini Fetch Failed:', e); }
-        } else {
-            console.log("GEMINI_API_KEY is missing from environment");
+                const errText = await geminiResp.text();
+                console.error("Gemini Flash API Error:", geminiResp.status, errText);
+            } catch (e) { console.error('Gemini Flash Fetch Failed:', e); }
+            return null;
         }
 
-        // --- STEP 2: GROQ ---
-        if (messages.length === 0 && GROQ_API_KEY) {
-            console.log("Attempting Groq Failover...");
+        // --- GEMINI 2.5 FLASH-LITE (1,000 req/day) ---
+        async function tryGeminiFlashLite() {
+            if (!GEMINI_API_KEY) return null;
+            console.log("Attempting Gemini 2.5 Flash-Lite...");
+            try {
+                const geminiResp = await fetch(
+                    `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+                    }
+                );
+
+                if (geminiResp.ok) {
+                    const data = await geminiResp.json();
+                    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    const msgs = extractMessages(rawText);
+                    if (msgs.length > 0) {
+                        console.log("Gemini Flash-Lite Success!");
+                        return { messages: msgs, provider: 'gemini-2.5-flash-lite' };
+                    }
+                }
+                const errText = await geminiResp.text();
+                console.error("Gemini Flash-Lite API Error:", geminiResp.status, errText);
+            } catch (e) { console.error('Gemini Flash-Lite Fetch Failed:', e); }
+            return null;
+        }
+
+
+        // --- GROQ LLAMA 3.1 8B (Fast, 14,400 req/day) ---
+        async function tryGroq8B() {
+            if (!GROQ_API_KEY) return null;
+            console.log("Attempting Groq Llama 3.1 8B...");
             try {
                 const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                     method: 'POST',
@@ -139,23 +198,77 @@ Deno.serve(async (req) => {
                 });
                 if (groqResp.ok) {
                     const data = await groqResp.json();
-                    messages = extractMessages(data.choices[0].message.content);
-                    if (messages.length > 0) {
-                        provider = 'groq-llama-3.1';
-                        console.log("Groq Success!");
-                    } else {
-                        console.log("Groq returned empty or invalid format");
+                    const msgs = extractMessages(data.choices[0].message.content);
+                    if (msgs.length > 0) {
+                        console.log("Groq 8B Success!");
+                        return { messages: msgs, provider: 'groq-llama-3.1-8b' };
                     }
-                } else {
-                    const errText = await groqResp.text();
-                    console.error("Groq API Error:", groqResp.status, errText);
                 }
-            } catch (e) { console.error('Groq Fetch Failed:', e); }
-        } else if (messages.length === 0) {
-            console.log("GROQ_API_KEY is missing or Gemini already succeeded");
+                const errText = await groqResp.text();
+                console.error("Groq 8B API Error:", groqResp.status, errText);
+            } catch (e) { console.error('Groq 8B Fetch Failed:', e); }
+            return null;
         }
 
-        // --- STEP 3: DATABASE SAFETY NET ---
+        // --- GROQ LLAMA 3.3 70B (High capability, 14,400 req/day) ---
+        async function tryGroq70B() {
+            if (!GROQ_API_KEY) return null;
+            console.log("Attempting Groq Llama 3.3 70B...");
+            try {
+                const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'llama-3.3-70b-versatile',
+                        messages: [{ role: 'user', content: prompt }],
+                        response_format: { type: "json_object" }
+                    }),
+                });
+                if (groqResp.ok) {
+                    const data = await groqResp.json();
+                    const msgs = extractMessages(data.choices[0].message.content);
+                    if (msgs.length > 0) {
+                        console.log("Groq 70B Success!");
+                        return { messages: msgs, provider: 'groq-llama-3.3-70b' };
+                    }
+                }
+                const errText = await groqResp.text();
+                console.error("Groq 70B API Error:", groqResp.status, errText);
+            } catch (e) { console.error('Groq 70B Fetch Failed:', e); }
+            return null;
+        }
+
+        // === LOAD BALANCING LOGIC ===
+        const primaryProvider = getNextProvider();
+        console.log(`🎯 Load Balancer: Routing to ${primaryProvider}`);
+
+        // Provider map
+        const providerMap: Record<string, () => Promise<any>> = {
+            'gemini-flash': tryGeminiFlash,
+            'gemini-flash-lite': tryGeminiFlashLite,
+            'groq-8b': tryGroq8B,
+            'groq-70b': tryGroq70B
+        };
+
+        let result = await tryProviderWithRetry(providerMap[primaryProvider], primaryProvider);
+
+        // If primary fails, try others in rotation
+        if (!result) {
+            console.log(`${primaryProvider} failed, trying other providers...`);
+            for (const providerName of providers) {
+                if (providerName !== primaryProvider) {
+                    result = await tryProviderWithRetry(providerMap[providerName], providerName);
+                    if (result) break;
+                }
+            }
+        }
+
+        if (result) {
+            messages = result.messages;
+            provider = result.provider;
+        }
+
+        // --- DATABASE SAFETY NET ---
         if (messages.length === 0) {
             console.log('AI models unavailable. Consulting Database Backup Reservoir...');
             const { data: dbFallback, error: dbError } = await supabase
@@ -181,42 +294,6 @@ Deno.serve(async (req) => {
                     messages = randomFallback.map((m: { message_text: string }) => m.message_text);
                     provider = 'safety-net';
                 }
-            }
-        }
-
-        // --- STEP 2: GROQ ---
-        if (messages.length === 0 && GROQ_API_KEY) {
-            try {
-                const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        model: 'llama-3.1-8b-instant',
-                        messages: [{ role: 'user', content: prompt }],
-                        response_format: { type: "json_object" }
-                    }),
-                });
-                if (groqResp.ok) {
-                    const data = await groqResp.json();
-                    messages = extractMessages(data.choices[0].message.content);
-                    if (messages.length > 0) provider = 'groq-llama-3.1';
-                }
-            } catch (e) { console.error('Groq Failed'); }
-        }
-
-        // --- STEP 3: DATABASE SAFETY NET ---
-        if (messages.length === 0) {
-            console.log('AI models unavailable. Consulting Database Backup...');
-            const { data: dbFallback } = await supabase
-                .from('message_library')
-                .select('message_text')
-                .eq('relationship', relationship)
-                .eq('tone', tone)
-                .limit(3);
-
-            if (dbFallback && dbFallback.length > 0) {
-                messages = dbFallback.map(m => m.message_text);
-                provider = 'safety-net';
             }
         }
 
