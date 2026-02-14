@@ -39,4 +39,4 @@ export const RELATIONSHIP_OPTIONS: { label: Relationship; icon: React.ReactNode 
   { label: 'Customer', icon: <ShoppingBag className="w-6 h-6" /> },
 ];
 
-export const TONE_OPTIONS: Tone[] = ['Romantic', 'Professional', 'Friendly', 'Polite', 'Funny'];
+export const TONE_OPTIONS: Tone[] = ['Romantic', 'Professional', 'Friendly', 'Polite', 'Funny', 'Heartbroken', 'Apology'];
