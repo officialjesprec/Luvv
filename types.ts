@@ -16,7 +16,7 @@ export type Relationship =
   | 'Customer'
   | 'Crush';
 
-export type Tone = 'Romantic' | 'Professional' | 'Friendly' | 'Polite' | 'Funny' | 'Heartbroken' | 'Apology';
+export type Tone = 'Romantic' | 'Professional' | 'Friendly' | 'Polite' | 'Funny' | 'Heartbroken' | 'Apology' | 'Appreciation';
 
 export interface AppState {
   step: number;
