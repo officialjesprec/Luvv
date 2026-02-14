@@ -342,9 +342,11 @@ const AdminDashboard: React.FC = () => {
 const ProviderCard = ({ label, requests, messages, sub, color }: any) => {
     const theme = {
         pink: 'from-pink-500/10 border-pink-500/20 text-pink-400',
+        rose: 'from-rose-500/10 border-rose-500/20 text-rose-400',
         amber: 'from-amber-500/10 border-amber-500/20 text-amber-400',
+        orange: 'from-orange-500/10 border-orange-500/20 text-orange-400',
         blue: 'from-blue-500/10 border-blue-500/20 text-blue-400'
-    }[color as 'pink' | 'amber' | 'blue'];
+    }[color as 'pink' | 'rose' | 'amber' | 'orange' | 'blue'];
 
     return (
         <div className={`p-8 bg-gradient-to-br ${theme} border rounded-[2.5rem] text-center shadow-lg group hover:scale-105 transition-all`}>
