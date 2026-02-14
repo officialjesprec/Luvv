@@ -10,7 +10,46 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// ... (Keep your normalize, sanitize, and personalize helper functions the same) ...
+// --- HELPER FUNCTIONS (RE-INCLUDED FOR SAFETY) ---
+
+function normalizeMessages(msgs: any[]): string[] {
+    return msgs.map(m => {
+        if (typeof m === 'object' && m !== null) {
+            return m.message || m.text || m.content || JSON.stringify(m);
+        }
+        return typeof m === 'string' ? m.trim() : String(m);
+    });
+}
+
+function sanitizeToTemplate(msgs: string[], recipient: string, sender: string): string[] {
+    return msgs.map(m => {
+        const rRegex = new RegExp(`\\b${recipient.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+        const sRegex = new RegExp(`\\b${sender.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+        return m.replace(rRegex, '[RECIPIENT]').replace(sRegex, '[SENDER]');
+    });
+}
+
+function personalizeMessages(msgs: string[], recipient: string, sender: string): string[] {
+    return msgs.map(m => m.replace(/\[RECIPIENT\]/g, recipient).replace(/\[SENDER\]/g, sender));
+}
+
+// Robust JSON Extractor: Finds the JSON array even if the AI adds conversational text
+function extractMessages(text: string): string[] {
+    try {
+        const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+        if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            const msgs = Array.isArray(parsed) ? parsed : (parsed.messages || parsed.choices);
+            if (Array.isArray(msgs)) return normalizeMessages(msgs);
+        }
+    } catch (e) {
+        console.error("Regex Parse Failed, falling back to raw split");
+    }
+    // Final fallback: If not JSON, split by double newlines
+    return text.split(/\n\n+/).filter(t => t.length > 20).slice(0, 3);
+}
+
+// --- MAIN SERVER ---
 
 Deno.serve(async (req) => {
     if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -18,41 +57,37 @@ Deno.serve(async (req) => {
     try {
         const { recipient, sender, relationship, tone } = await req.json();
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        
-        const prompt = `Write a deep, heartfelt ${tone} Valentine's message for my ${relationship}. 
-        Use placeholders [RECIPIENT] and [SENDER]. Return JSON with key "messages" containing 3 options.`;
+
+        const prompt = `Write 3 deep, soulful ${tone} Valentine's love letters (around 200 words each) for my ${relationship}. 
+        Use [RECIPIENT] and [SENDER] as placeholders. 
+        IMPORTANT: Return ONLY a valid JSON object with the key "messages" containing an array of the 3 strings.`;
 
         let messages: string[] = [];
         let provider = '';
 
-        // --- STEP 1: TRY GEMINI (AI-FIRST) ---
-        try {
-            console.log('Attempting Gemini...');
-            const geminiResp = await fetch(
-                `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-                }
-            );
-
-            if (geminiResp.ok) {
-                const data = await geminiResp.json();
-                const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (rawText) {
-                    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-                    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
-                    messages = normalizeMessages(parsed.messages);
-                    provider = 'gemini-2.5-flash';
-                }
-            }
-        } catch (e) { console.error('Gemini Failed'); }
-
-        // --- STEP 2: TRY GROQ (IF GEMINI FAILED) ---
-        if (messages.length === 0) {
+        // --- STEP 1: GEMINI 2.5 ---
+        if (GEMINI_API_KEY) {
             try {
-                console.log('Gemini failed. Attempting Groq...');
+                const geminiResp = await fetch(
+                    `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+                    }
+                );
+                if (geminiResp.ok) {
+                    const data = await geminiResp.json();
+                    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    messages = extractMessages(rawText);
+                    if (messages.length > 0) provider = 'gemini-2.5-flash';
+                }
+            } catch (e) { console.error('Gemini Failed'); }
+        }
+
+        // --- STEP 2: GROQ ---
+        if (messages.length === 0 && GROQ_API_KEY) {
+            try {
                 const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
@@ -62,17 +97,15 @@ Deno.serve(async (req) => {
                         response_format: { type: "json_object" }
                     }),
                 });
-
                 if (groqResp.ok) {
                     const data = await groqResp.json();
-                    const parsed = JSON.parse(data.choices[0].message.content);
-                    messages = normalizeMessages(parsed.messages);
-                    provider = 'groq-llama-3.1';
+                    messages = extractMessages(data.choices[0].message.content);
+                    if (messages.length > 0) provider = 'groq-llama-3.1';
                 }
             } catch (e) { console.error('Groq Failed'); }
         }
 
-        // --- STEP 3: CONSULT DATABASE (ONLY IF BOTH AI FAILED) ---
+        // --- STEP 3: DATABASE SAFETY NET ---
         if (messages.length === 0) {
             console.log('AI models unavailable. Consulting Database Backup...');
             const { data: dbFallback } = await supabase
@@ -80,33 +113,31 @@ Deno.serve(async (req) => {
                 .select('message_text')
                 .eq('relationship', relationship)
                 .eq('tone', tone)
-                .order('created_at', { ascending: false }) // Get the most recent ones
                 .limit(3);
 
             if (dbFallback && dbFallback.length > 0) {
                 messages = dbFallback.map(m => m.message_text);
-                provider = 'db-safety-net';
+                provider = 'safety-net';
             }
         }
 
-        if (messages.length === 0) throw new Error('Complete System Failure');
+        if (messages.length === 0) throw new Error('System Offline');
 
-        // --- STEP 4: BACKUP NEW MESSAGES TO DB ---
-        if (provider.includes('gemini') || provider.includes('groq')) {
-            const templateMessages = sanitizeToTemplate(messages, recipient, sender);
-            const dbEntries = templateMessages.map(txt => ({
-                relationship, tone, message_text: txt, provider
-            }));
-            await supabase.from('message_library').insert(dbEntries);
-            // Log for your dashboard
+        // --- STEP 4: PERSISTENCE ---
+        if (provider !== 'safety-net') {
+            const templates = sanitizeToTemplate(messages, recipient, sender);
+            await supabase.from('message_library').insert(
+                templates.map(txt => ({ relationship, tone, message_text: txt, provider }))
+            );
             await supabase.from('ai_usage_logs').insert({ 
                 model_name: provider.includes('gemini') ? 'gemini' : 'groq', status: 'success' 
             });
+            messages = personalizeMessages(templates, recipient, sender);
+        } else {
+            messages = personalizeMessages(messages, recipient, sender);
         }
 
-        // Always personalize for the user
-        const finalMessages = personalizeMessages(messages, recipient, sender);
-        return new Response(JSON.stringify({ messages: finalMessages, provider }), {
+        return new Response(JSON.stringify({ messages, provider }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
 
