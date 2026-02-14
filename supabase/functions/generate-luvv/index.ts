@@ -95,6 +95,7 @@ Deno.serve(async (req) => {
 
         // --- STEP 1: GEMINI 2.5 ---
         if (GEMINI_API_KEY) {
+            console.log("Attempting Gemini Generation...");
             try {
                 const geminiResp = await fetch(
                     `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -108,9 +109,79 @@ Deno.serve(async (req) => {
                     const data = await geminiResp.json();
                     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
                     messages = extractMessages(rawText);
-                    if (messages.length > 0) provider = 'gemini-2.5-flash';
+                    if (messages.length > 0) {
+                        provider = 'gemini-2.5-flash';
+                        console.log("Gemini Success!");
+                    } else {
+                        console.log("Gemini returned empty or invalid format");
+                    }
+                } else {
+                    const errText = await geminiResp.text();
+                    console.error("Gemini API Error:", geminiResp.status, errText);
                 }
-            } catch (e) { console.error('Gemini Failed'); }
+            } catch (e) { console.error('Gemini Fetch Failed:', e); }
+        } else {
+            console.log("GEMINI_API_KEY is missing from environment");
+        }
+
+        // --- STEP 2: GROQ ---
+        if (messages.length === 0 && GROQ_API_KEY) {
+            console.log("Attempting Groq Failover...");
+            try {
+                const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'llama-3.1-8b-instant',
+                        messages: [{ role: 'user', content: prompt }],
+                        response_format: { type: "json_object" }
+                    }),
+                });
+                if (groqResp.ok) {
+                    const data = await groqResp.json();
+                    messages = extractMessages(data.choices[0].message.content);
+                    if (messages.length > 0) {
+                        provider = 'groq-llama-3.1';
+                        console.log("Groq Success!");
+                    } else {
+                        console.log("Groq returned empty or invalid format");
+                    }
+                } else {
+                    const errText = await groqResp.text();
+                    console.error("Groq API Error:", groqResp.status, errText);
+                }
+            } catch (e) { console.error('Groq Fetch Failed:', e); }
+        } else if (messages.length === 0) {
+            console.log("GROQ_API_KEY is missing or Gemini already succeeded");
+        }
+
+        // --- STEP 3: DATABASE SAFETY NET ---
+        if (messages.length === 0) {
+            console.log('AI models unavailable. Consulting Database Backup Reservoir...');
+            const { data: dbFallback, error: dbError } = await supabase
+                .from('message_library')
+                .select('message_text')
+                .eq('relationship', relationship)
+                .eq('tone', tone)
+                .limit(3);
+
+            if (dbError) console.error("Database Lookup Error:", dbError);
+
+            if (dbFallback && dbFallback.length > 0) {
+                messages = dbFallback.map((m: { message_text: string }) => m.message_text);
+                provider = 'safety-net';
+                console.log("Safety Net Active: Serving 3 legacy messages");
+            } else {
+                console.log("Safety Net EMPTY for this criteria, trying random fallback...");
+                const { data: randomFallback } = await supabase
+                    .from('message_library')
+                    .select('message_text')
+                    .limit(3);
+                if (randomFallback) {
+                    messages = randomFallback.map((m: { message_text: string }) => m.message_text);
+                    provider = 'safety-net';
+                }
+            }
         }
 
         // --- STEP 2: GROQ ---

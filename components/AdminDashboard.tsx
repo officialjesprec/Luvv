@@ -135,7 +135,7 @@ const AdminDashboard: React.FC = () => {
                     providers: providerCounts,
                     health: {
                         latency: `${endTime - startTime}ms`,
-                        load: `${Math.min((generatedToday / 250) * 100, 100).toFixed(0)}%`,
+                        load: `${Math.min((generatedToday / 5000) * 100, 100).toFixed(0)}%`,
                         aiStatus: (today.count ?? 0) > 0 ? 'Operational' : 'Active'
                     }
                 });
@@ -240,16 +240,26 @@ const AdminDashboard: React.FC = () => {
                                         })}
                                 </div>
                             ) : (
-                                <div className="h-[250px] w-full flex items-end gap-3 px-2 overflow-x-auto no-scrollbar pb-4 pt-8">
+                                <div className="h-[280px] w-full flex items-end gap-3 px-2 overflow-x-auto no-scrollbar pb-6 pt-12">
                                     {stats.dailyMessages.map((d, i) => (
-                                        <div key={i} className="min-w-[70px] flex-1 flex flex-col items-center gap-4 group">
-                                            <div className="relative w-full flex-1 flex flex-col justify-end">
-                                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-pink-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    {d.count}
+                                        <div key={i} className="min-w-[85px] flex-1 flex flex-col items-center gap-4 group relative">
+                                            {/* Column Backdrop for better structure */}
+                                            <div className="absolute inset-x-0 bottom-10 top-0 bg-white/5 rounded-3xl -z-0"></div>
+
+                                            <div className="relative w-full flex-1 flex flex-col justify-end z-10 px-2">
+                                                {/* Value Label - Always Visible and Prominent */}
+                                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                                                    <span className="text-xl font-serif font-bold text-pink-400 drop-shadow-[0_0_10px_rgba(236,72,153,0.3)]">{d.count}</span>
+                                                    <div className="w-1 h-3 bg-pink-500/20 rounded-full mt-1"></div>
                                                 </div>
-                                                <div className="w-full bg-gradient-to-t from-pink-600 to-pink-400 rounded-t-2xl transition-all duration-1000 ease-out shadow-lg shadow-pink-600/10" style={{ height: `${(d.count / Math.max(...stats.dailyMessages.map(dm => dm.count), 1)) * 100}%` }}></div>
+
+                                                {/* Bar - More Vibrant and Solid */}
+                                                <div
+                                                    className="w-full bg-pink-500 rounded-t-2xl transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(236,72,153,0.4)] hover:bg-pink-400 cursor-help"
+                                                    style={{ height: `${Math.max((d.count / Math.max(...stats.dailyMessages.map(dm => dm.count), 1)) * 100, 5)}%` }}
+                                                ></div>
                                             </div>
-                                            <span className="text-[8px] font-bold text-pink-100/30 uppercase text-center leading-tight h-6 flex items-center">{d.date}</span>
+                                            <span className="text-[10px] font-bold text-pink-100/40 uppercase text-center leading-tight h-8 flex items-center z-10">{d.date}</span>
                                         </div>
                                     ))}
                                 </div>
