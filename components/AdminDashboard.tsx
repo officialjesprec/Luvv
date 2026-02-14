@@ -275,7 +275,7 @@ const AdminDashboard: React.FC = () => {
                                         })}
                                 </div>
                             ) : (
-                                <div className="h-[400px] w-full flex items-end gap-6 px-4 overflow-x-auto no-scrollbar pb-8 pt-12">
+                                <div className="h-[400px] w-full flex items-end justify-center gap-4 px-4 pb-8 pt-12">
                                     {Object.entries(stats.relationships)
                                         .sort(([, a], [, b]) => b - a)
                                         .slice(0, 6)
@@ -283,7 +283,7 @@ const AdminDashboard: React.FC = () => {
                                             const maxCount = Math.max(...Object.values(stats.relationships));
                                             const percentage = stats.totalGenerated > 0 ? (count / stats.totalGenerated) * 100 : 0;
                                             return (
-                                                <div key={relationship} className="min-w-[200px] flex flex-col items-center gap-4 group relative">
+                                                <div key={relationship} className="w-[135px] flex flex-col items-center gap-4 group relative">
                                                     {/* Column Backdrop */}
                                                     <div className="absolute inset-x-0 bottom-12 top-0 bg-white/5 rounded-3xl -z-0"></div>
 
