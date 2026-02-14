@@ -104,19 +104,18 @@ const AdminDashboard: React.FC = () => {
                     if (item.created_at >= todayStart) generatedToday++;
                     if (item.created_at >= yesterdayStart && item.created_at < todayStart) generatedYesterday++;
 
-                    const d = new Date(item.created_at);
-                    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    if (dailyCounts[dateStr] !== undefined) dailyCounts[dateStr]++;
+                    if (item.provider?.toLowerCase().includes('gemini')) providerCounts.gemini.messages++;
+                    else if (item.provider?.toLowerCase().includes('groq')) providerCounts.groq.messages++;
 
-                    if (item.provider?.includes('gemini')) providerCounts.gemini.messages++;
-                    else if (item.provider?.includes('groq')) providerCounts.groq.messages++;
-                    else if (item.provider === 'safety-net') providerCounts.safetyNet.messages++;
+                    // Safety Net "Messages" represents the total pool available in the reservoir
+                    providerCounts.safetyNet.messages = usageData.length;
                 });
 
                 aiLogs?.forEach(log => {
-                    if (log.model_name?.includes('gemini')) providerCounts.gemini.requests++;
-                    else if (log.model_name?.includes('groq')) providerCounts.groq.requests++;
-                    else if (log.model_name?.includes('safety-net')) providerCounts.safetyNet.requests++;
+                    const model = log.model_name?.toLowerCase() || '';
+                    if (model.includes('gemini')) providerCounts.gemini.requests++;
+                    else if (model.includes('groq')) providerCounts.groq.requests++;
+                    else if (model.includes('safety-net')) providerCounts.safetyNet.requests++;
                 });
 
                 setStats({
@@ -130,7 +129,9 @@ const AdminDashboard: React.FC = () => {
                     relationships: relCounts,
                     totalGenerated: usageData?.length || 0,
                     totalGeneratedYesterday: generatedYesterday,
-                    dailyMessages: Object.entries(dailyCounts).map(([date, count]) => ({ date, count })),
+                    dailyMessages: Object.entries(relCounts)
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([rel, count]) => ({ date: rel, count })),
                     providers: providerCounts,
                     health: {
                         latency: `${endTime - startTime}ms`,
@@ -223,27 +224,32 @@ const AdminDashboard: React.FC = () => {
                         <div className="p-10 flex-1">
                             {activeTab === 'Overview' ? (
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-                                    {RELATIONSHIP_OPTIONS.map((opt) => {
-                                        const count = stats.relationships[opt.label] || 0;
-                                        const percentage = stats.totalGenerated > 0 ? (count / stats.totalGenerated) * 100 : 0;
-                                        return (
-                                            <div key={opt.label} className="p-8 bg-white/5 border border-white/10 rounded-[2.5rem] group hover:border-pink-500/40 transition-all hover:bg-white/10 flex flex-col items-center">
-                                                <div className="mb-4 text-pink-400 group-hover:scale-125 transition-transform">{opt.icon}</div>
-                                                <span className="text-[9px] font-bold uppercase tracking-widest text-pink-100/20 mb-3">{opt.label}</span>
-                                                <div className="text-3xl font-serif font-bold mb-1">{count}</div>
-                                                <div className="text-[9px] font-bold text-pink-400/60">{percentage.toFixed(0)}% SHARE</div>
-                                            </div>
-                                        );
-                                    })}
+                                    {RELATIONSHIP_OPTIONS
+                                        .map(opt => ({ ...opt, count: stats.relationships[opt.label] || 0 }))
+                                        .sort((a, b) => b.count - a.count)
+                                        .map((opt) => {
+                                            const percentage = stats.totalGenerated > 0 ? (opt.count / stats.totalGenerated) * 100 : 0;
+                                            return (
+                                                <div key={opt.label} className="p-8 bg-white/5 border border-white/10 rounded-[2.5rem] group hover:border-pink-500/40 transition-all hover:bg-white/10 flex flex-col items-center">
+                                                    <div className="mb-4 text-pink-400 group-hover:scale-125 transition-transform">{opt.icon}</div>
+                                                    <span className="text-[9px] font-bold uppercase tracking-widest text-pink-100/20 mb-3">{opt.label}</span>
+                                                    <div className="text-3xl font-serif font-bold mb-1">{opt.count}</div>
+                                                    <div className="text-[9px] font-bold text-pink-400/60">{percentage.toFixed(0)}% SHARE</div>
+                                                </div>
+                                            );
+                                        })}
                                 </div>
                             ) : (
-                                <div className="h-[250px] w-full flex items-end gap-4 px-2">
+                                <div className="h-[250px] w-full flex items-end gap-3 px-2 overflow-x-auto no-scrollbar pb-4 pt-8">
                                     {stats.dailyMessages.map((d, i) => (
-                                        <div key={i} className="flex-1 flex flex-col items-center gap-4 group">
+                                        <div key={i} className="min-w-[70px] flex-1 flex flex-col items-center gap-4 group">
                                             <div className="relative w-full flex-1 flex flex-col justify-end">
-                                                <div className="w-full bg-gradient-to-t from-pink-600 to-pink-400 rounded-t-2xl transition-all duration-1000 ease-out shadow-lg shadow-pink-600/10" style={{ height: `${(d.count / Math.max(...stats.dailyMessages.map(dm => dm.count), 5)) * 100}%` }}></div>
+                                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-pink-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {d.count}
+                                                </div>
+                                                <div className="w-full bg-gradient-to-t from-pink-600 to-pink-400 rounded-t-2xl transition-all duration-1000 ease-out shadow-lg shadow-pink-600/10" style={{ height: `${(d.count / Math.max(...stats.dailyMessages.map(dm => dm.count), 1)) * 100}%` }}></div>
                                             </div>
-                                            <span className="text-[10px] font-bold text-pink-100/30 uppercase">{d.date}</span>
+                                            <span className="text-[8px] font-bold text-pink-100/30 uppercase text-center leading-tight h-6 flex items-center">{d.date}</span>
                                         </div>
                                     ))}
                                 </div>
