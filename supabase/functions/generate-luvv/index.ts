@@ -58,9 +58,37 @@ Deno.serve(async (req) => {
         const { recipient, sender, relationship, tone } = await req.json();
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-        const prompt = `Write 3 deep, soulful ${tone} Valentine's love letters (around 150 words each) for my ${relationship}. 
+        // Context-aware prompt logic to ensure appropriateness
+        const romanticRelationships = ['Spouse', 'Girlfriend', 'Boyfriend', 'Crush'];
+        const professionalRelationships = ['Employer', 'Customer'];
+        const platonicRelationships = ['Male Friend', 'Female Friend', 'Pastor', 'Father', 'Mother', 'Sister', 'Brother', 'Cousin'];
+
+        let contextInstruction = '';
+        let messageType = 'Valentine\'s messages';
+
+        if (romanticRelationships.includes(relationship)) {
+            contextInstruction = "Write deep, soulful, and romantic love letters expressing intense affection.";
+            messageType = 'love letters';
+        } else if (professionalRelationships.includes(relationship)) {
+            contextInstruction = "Write professional, respectful, and appreciative messages. DO NOT use any romantic or flirtatious language. Maintain healthy professional boundaries.";
+            messageType = 'professional appreciation letters';
+        } else if (relationship === 'Ex') {
+            contextInstruction = "Write thoughtful, balanced, and mature messages. Avoid romantic sentiment and avoid hostility. Keep it civil and reflective.";
+            messageType = 'reflective messages';
+        } else if (platonicRelationships.includes(relationship)) {
+            // Platonic or Family
+            contextInstruction = "Write heartfelt, appreciative, and warm messages. Focus on the value of the bond and shared connection. DO NOT use romantic or sexual language.";
+            messageType = 'heartfelt messages';
+        }
+
+        const prompt = `Task: ${contextInstruction}
+        Write 3 ${tone} ${messageType} (around 150 words each) for my ${relationship}. 
+        Relationship Context: ${relationship}
+        Selected Tone: ${tone}
+        
         Use [RECIPIENT] and [SENDER] as placeholders. 
-        IMPORTANT: Return ONLY a valid JSON object with the key "messages" containing an array of the 3 strings.`;
+        IMPORTANT: The content MUST strictly follow the relationship context. If the relationship is not romantic (like Boss, Customer, or Pastor), the message MUST BE STRICTLY NON-ROMANTIC.
+        Return ONLY a valid JSON object with the key "messages" containing an array of the 3 strings.`;
 
         let messages: string[] = [];
         let provider = '';
